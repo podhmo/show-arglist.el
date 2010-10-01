@@ -29,6 +29,11 @@
   :type '(number :tag "seconds")
   :group 'arglist-showing)
 
+(defcustom show-arglist-left-padding-string "  "
+  "left padding string for show-arglist."
+  :type 'string
+  :group 'arglist-showing)
+
 (defvar show-arglist-idle-timer nil)
 
 (defun show-arglist-buffer-exist-p ()
@@ -70,6 +75,7 @@ after `show-arglist-delay' seconds of Emacs idle time."
       ;; If definition is a keymap, skip arglist note.
       (unless (keymapp def)
         (let* ((usage (show-arglist-get-usage function def arglist))
+               (usage (concat show-arglist-left-padding-string usage))
                (highlighted (help-highlight-arguments usage "")))
           (setq header-line-format (car highlighted))
           ;; for obsolete symbols
@@ -100,7 +106,8 @@ after `show-arglist-delay' seconds of Emacs idle time."
 
 (defun show-arglist-edit-line-format-for-obsolete (obsolete)
   (setq header-line-format
-        (format " (obsolete%s; %s)"
+        (format "%s(obsolete%s; %s)"
+                show-arglist-left-padding-string
                 (let ((message (nth 2 obsolete)))
                   (if message (format " since %s" message) ""))
                 (let ((newer (car obsolete)))
