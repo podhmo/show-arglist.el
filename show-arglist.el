@@ -64,52 +64,56 @@ after `show-arglist-delay' seconds of Emacs idle time."
   "引数リストを取り出して，`header-line-format'にほり込む"
   (let* ((def (if (symbolp function)
                   (symbol-function function)
-                function))
-         file-name string)
-    (let* ((arglist (help-function-arglist def)))
+                  function))
+         (arglist (help-function-arglist def)))
+
       ;; If definition is a keymap, skip arglist note.
       (unless (keymapp def)
-        (let* ((use (cond
-                     ((listp arglist)
-                      (format "%S" (help-make-usage function arglist)))
-                     ((stringp arglist) arglist)
-                     ;; Maybe the arglist is in the docstring of the alias.
-                     ((let ((fun function))
-                        (while (and (symbolp fun)
-                                    (setq fun (symbol-function fun))
-                                    (not (setq usage (help-split-fundoc
-                                                      (documentation fun)
-                                                      function)))))
-                        usage)
-                      (car usage))
-                     ((or (stringp def)
-                          (vectorp def))
-                      (format "\nMacro: %s" (format-kbd-macro def)))
-                     (t "[Missing arglist.  Please make a bug report.]")))
-               (high (help-highlight-arguments use "")))
-          (setq header-line-format (car high))
+        (let* ((usage (show-arglist-get-usage function def arglist))
+               (highlighted (help-highlight-arguments usage "")))
+          (setq header-line-format (car highlighted))
+          ;; for obsolete symbols
           (let ((obsolete (and
                            ;; function might be a lambda construct.
                            (symbolp function)
                            (get function 'byte-obsolete-info))))
             (when obsolete
-              (setq header-line-format (concat header-line-format " (obsolete"
-                                               (when (nth 2 obsolete)
-                                                 (format " since %s" (nth 2 obsolete)))
-                                               ";"
-                                               (if (stringp (car obsolete)) (car obsolete)
-                                                 (format "use `%s' instead." (car obsolete)))
-                                               ")")))))))))
+              (show-arglist-edit-line-format-for-obsolete obsolete)))))))
+
+(defun show-arglist-get-usage (function def arglist)
+  (cond ((listp arglist)
+         (format "%S" (help-make-usage function arglist)))
+        ((stringp arglist) arglist)
+        ;; Maybe the arglist is in the docstring of the alias.
+        ((let ((fun function))
+           (while (and (symbolp fun)
+                       (setq fun (symbol-function fun))
+                       (not (setq usage (help-split-fundoc
+                                         (documentation fun)
+                                         function)))))
+           usage)
+         (car usage))
+        ((or (stringp def)
+             (vectorp def))
+         (format "\nMacro: %s" (format-kbd-macro def)))
+        (t "[Missing arglist.  Please make a bug report.]")))
+
+(defun show-arglist-edit-line-format-for-obsolete (obsolete)
+  (setq header-line-format
+        (format " (obsolete%s; %s)"
+                (let ((message (nth 2 obsolete)))
+                  (if message (format " since %s" message) ""))
+                (let ((newer (car obsolete)))
+                  (if (stringp newer) newer (format "use `%s' instead."))))))
 
 (defun show-arglist-function ()
   "Display the full documentation of FUNCTION (a symbol)."
-  (if show-arglist-mode
-      (let ((function (function-called-at-point)))
-        (unless (null function)
-          (show-arglist-1 function)))
-    (progn
-      (setq header-line-format nil)
-      (message "show done"))))
+  (cond (show-arglist-mode
+         (let ((function (function-called-at-point)))
+           (unless (null function)
+             (show-arglist-1 function))))
+        (t (setq header-line-format nil)
+           (message "show done"))))
 
 ;; if mode is off then clean header line
 (defvar show-arglist-mode-off-hook nil)
