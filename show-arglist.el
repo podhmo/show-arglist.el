@@ -16,6 +16,7 @@
 
 ;;; Code:
 (eval-when-compile (require 'cl))
+(require 'help-fns)
 
 (defgroup arglist-showing nil
   "Showing arglist of function at point."
