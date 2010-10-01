@@ -37,7 +37,6 @@
         return t
         finally return nil))
 
-
 ;;;###autoload
 (define-minor-mode show-arglist-mode
   "Toggle Show Arglist mode.
@@ -110,6 +109,13 @@ after `show-arglist-delay' seconds of Emacs idle time."
     (progn
       (setq header-line-format nil)
       (message "show done"))))
+
+;; if mode is off then clean header line
+(defvar show-arglist-mode-off-hook nil)
+(defun show-arglist-mode-clean-header-line ()
+  (setq header-line-format nil))
+(add-hook 'show-arglist-mode-off-hook 
+          'show-arglist-mode-clean-header-line)
 
 (provide 'show-arglist)
 
